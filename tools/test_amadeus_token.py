@@ -16,6 +16,10 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+if not settings.amadeus_client_id or not settings.amadeus_client_secret:
+    print("Missing AMADEUS_CLIENT_ID / AMADEUS_CLIENT_SECRET. Create backend/.env (or set env vars) and retry.")
+    sys.exit(1)
+
 base = settings.amadeus_base_url.rstrip("/")
 url = f"{base}/v1/security/oauth2/token"
 

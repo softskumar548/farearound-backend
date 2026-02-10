@@ -12,6 +12,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.api.amadeus_client import search_flights
+from app.api.flight_insight import (
+    compute_flight_insight,
+    extract_price_points_from_raw_offers,
+)
+from app.core.config import get_settings
 
 
 def normalize_offers(raw: dict):
@@ -45,6 +50,11 @@ def normalize_offers(raw: dict):
 
 
 def run_test():
+    settings = get_settings()
+    if not settings.amadeus_client_id or not settings.amadeus_client_secret:
+        print("Missing AMADEUS_CLIENT_ID / AMADEUS_CLIENT_SECRET. Create backend/.env (or set env vars) and retry.")
+        return 1
+
     params = {
         "originLocationCode": "BLR",
         "destinationLocationCode": "DXB",
@@ -62,6 +72,21 @@ def run_test():
         print("Search failed:", repr(e))
         return 2
 
+    insight = None
+    try:
+        offers = raw.get("data", []) if isinstance(raw, dict) else []
+        points = extract_price_points_from_raw_offers(offers)
+        computed = compute_flight_insight(points, params["departureDate"])
+        insight = {
+            "best_price": computed.best_price,
+            "currency": computed.currency,
+            "recommendation": computed.recommendation,
+            "reason": computed.reason,
+            "confidence": computed.confidence,
+        }
+    except Exception as e:
+        insight = {"error": str(e)}
+
     simplified = normalize_offers(raw)
     out = {
         "query": {
@@ -73,6 +98,7 @@ def run_test():
         },
         "count": len(simplified),
         "offers": simplified,
+        "insight": insight,
     }
     print("Normalized response:")
     print(json.dumps(out, indent=2))

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router as api_router
 from .core.config import get_settings
+from .db.sqlite import init_db, resolve_db_path
 import logging
 
 app = FastAPI(title="FareAround AI API")
@@ -32,3 +33,10 @@ def _startup():
     log.info("Amadeus base URL: %s", settings.amadeus_base_url)
     if not settings.amadeus_client_id or not settings.amadeus_client_secret:
         log.warning("Amadeus client ID/secret missing; API calls will fail until set")
+
+    try:
+        init_db()
+        log.info("SQLite DB initialized at %s", resolve_db_path())
+    except Exception:
+        # Fail-open so searches can still run even if persistence is broken.
+        log.exception("DB init failed (fail-open). App will continue without persistence.")

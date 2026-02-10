@@ -19,11 +19,15 @@ import httpx
 from ..core.config import get_settings
 
 logger = logging.getLogger("farearound.amadeus")
-settings = get_settings()
 
-# Use configured base URL (from .env or environment). Keep defaults in Settings.
-AMADEUS_TOKEN_URL = f"{settings.amadeus_base_url.rstrip('/')}/v1/security/oauth2/token"
-AMADEUS_API_BASE = settings.amadeus_base_url.rstrip('/')
+
+def _get_amadeus_base_url() -> str:
+    settings = get_settings()
+    return (settings.amadeus_base_url or "https://test.api.amadeus.com").rstrip("/")
+
+
+def _get_token_url() -> str:
+    return f"{_get_amadeus_base_url()}/v1/security/oauth2/token"
 
 
 class TTLCache:
@@ -84,6 +88,12 @@ def _get_token() -> str:
         if _token and _token_expiry - 10 > _now_ts():
             return _token
 
+        settings = get_settings()
+        if not settings.amadeus_client_id or not settings.amadeus_client_secret:
+            raise RuntimeError(
+                "Amadeus credentials are not configured. Set AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET."
+            )
+
         data = {
             "grant_type": "client_credentials",
             "client_id": settings.amadeus_client_id,
@@ -91,7 +101,7 @@ def _get_token() -> str:
         }
         try:
             with httpx.Client(timeout=10) as client:
-                r = client.post(AMADEUS_TOKEN_URL, data=data)
+                r = client.post(_get_token_url(), data=data)
                 r.raise_for_status()
                 body = r.json()
                 token = body.get("access_token")
@@ -153,7 +163,7 @@ def _request_with_retries(method: str, url: str, params: Dict[str, Any], max_att
 
 
 def search_flights(params: Dict[str, Any]) -> Dict[str, Any]:
-    endpoint = f"{AMADEUS_API_BASE}/v2/shopping/flight-offers"
+    endpoint = f"{_get_amadeus_base_url()}/v2/shopping/flight-offers"
     key = _make_cache_key(endpoint, params)
     cached = _response_cache.get(key)
     if cached is not None:
@@ -166,7 +176,7 @@ def search_flights(params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def search_hotels(params: Dict[str, Any]) -> Dict[str, Any]:
-    endpoint = f"{AMADEUS_API_BASE}/v1/shopping/hotel-offers"
+    endpoint = f"{_get_amadeus_base_url()}/v1/shopping/hotel-offers"
     key = _make_cache_key(endpoint, params)
     cached = _response_cache.get(key)
     if cached is not None:
