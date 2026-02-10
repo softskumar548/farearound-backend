@@ -2,6 +2,8 @@
 
 A FastAPI-based backend service for searching flights and hotels using the Amadeus API. This service provides a clean REST API with intelligent caching, retry mechanisms, and token management.
 
+> 📚 **New to this project?** Check out the [Quick Start Guide](QUICKSTART.md) or browse the [Documentation Index](DOCS_INDEX.md) to find what you need.
+
 ## Overview
 
 FareAround is a travel search backend that integrates with the Amadeus Travel API to provide:
