@@ -4,5 +4,7 @@ pydantic>=1.10.0
 pydantic-settings>=2.0.0
 httpx>=0.24.0
 python-dotenv>=1.0.0
+# PostgreSQL support (optional at runtime, required when DATABASE_URL is set)
+psycopg[binary]>=3.1.0
 # Optional official SDK; use if desired
 amadeus>=4.0.0

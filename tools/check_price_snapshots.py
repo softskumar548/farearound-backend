@@ -13,7 +13,7 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from app.db.sqlite import count_price_snapshots, last_price_snapshots, resolve_db_path
+from app.db.db import count_price_snapshots, last_price_snapshots, resolve_db_path
 
 
 def main() -> int:

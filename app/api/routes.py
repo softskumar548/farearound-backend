@@ -11,7 +11,8 @@ from .flight_insight import (
     extract_price_points_from_raw_offers,
     extract_price_points_from_simplified_offers,
 )
-from ..db.sqlite import insert_price_snapshot, upsert_price_alert_lead
+from ..db.db import insert_price_snapshot, upsert_price_alert_lead
+from ..services.alert_service import check_price_drops
 import logging
 
 router = APIRouter()
@@ -224,3 +225,13 @@ def get_hotels(cityCode: str = Query(...), checkIn: str = Query(...), checkOut: 
 @router.get("/affiliate/info")
 def affiliate_info(settings=Depends(get_settings)):
     return {"affiliate_id": settings.affiliate_id, "domain": settings.domain}
+
+
+@router.post("/run-alert-check")
+async def run_alert_check():
+    try:
+        summary = await run_in_threadpool(check_price_drops)
+        return summary
+    except Exception:
+        lead_log.exception("run-alert-check failed")
+        raise HTTPException(status_code=502, detail="Alert check failed")

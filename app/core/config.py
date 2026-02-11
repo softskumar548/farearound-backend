@@ -20,8 +20,20 @@ class Settings(BaseSettings):
     affiliate_id: str | None = None
     domain: str | None = None
     port: int = 8000
+    # Database
+    # If DATABASE_URL is set (e.g. postgres://...), the app will use PostgreSQL.
+    # Otherwise it will fall back to SQLite using DB_PATH.
+    database_url: str | None = None
     # SQLite DB file path. Relative paths resolve from backend directory.
     db_path: str = "farearound.db"
+
+    # Email (SMTP)
+    # Use Gmail SMTP for MVP: smtp.gmail.com:587 + STARTTLS.
+    email_host: str | None = None
+    email_port: int | None = None
+    email_user: str | None = None
+    email_password: str | None = None
+    email_from_name: str = "FareAround Alerts"
 
     class Config:
         # Resolve to backend/.env so tools can be run from repo root

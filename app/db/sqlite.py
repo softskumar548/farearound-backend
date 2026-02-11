@@ -174,3 +174,67 @@ def last_price_snapshots(limit: int = 5) -> list[tuple]:
             (int(limit),),
         )
         return list(cur.fetchall())
+
+
+def _parse_float(v: object | None) -> float | None:
+    if v is None:
+        return None
+    try:
+        return float(v)  # sqlite may return str/Decimal/int
+    except Exception:
+        return None
+
+
+def list_price_alert_leads() -> list[dict]:
+    """Return all saved price-alert leads.
+
+    Each item includes: id, email, origin, destination, departure_date,
+    last_seen_price (float|None), currency.
+    """
+    with get_conn() as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute(
+            """
+            SELECT id, email, origin, destination, departure_date, last_seen_price, currency, created_at
+            FROM price_alert_leads
+            ORDER BY id ASC
+            """
+        )
+        rows = cur.fetchall()
+
+    leads: list[dict] = []
+    for r in rows:
+        leads.append(
+            {
+                "id": int(r["id"]),
+                "email": r["email"],
+                "origin": r["origin"],
+                "destination": r["destination"],
+                "departure_date": r["departure_date"],
+                "last_seen_price": _parse_float(r["last_seen_price"]),
+                "currency": r["currency"],
+                "created_at": r["created_at"],
+            }
+        )
+    return leads
+
+
+def update_price_alert_lead_last_seen(
+    *,
+    lead_id: int,
+    last_seen_price: object | None,
+    currency: str | None,
+) -> None:
+    price_v = None if last_seen_price is None else str(last_seen_price)
+    currency_u = (currency or "").strip().upper() or None
+
+    with get_conn() as conn:
+        conn.execute(
+            """
+            UPDATE price_alert_leads
+            SET last_seen_price = ?, currency = ?
+            WHERE id = ?
+            """,
+            (price_v, currency_u, int(lead_id)),
+        )
+        conn.commit()
