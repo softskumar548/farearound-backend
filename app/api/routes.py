@@ -67,6 +67,12 @@ async def save_lead(payload: SaveLeadRequest):
     return {"status": "accepted"}
 
 
+@router.post("/leads", status_code=202)
+async def save_lead_public(payload: SaveLeadRequest):
+    # Public alias path (keeps legacy /save-lead working)
+    return await save_lead(payload)
+
+
 @router.get("/search/flights")
 async def get_flights(
     origin: str = Query(..., min_length=3, max_length=3, description="IATA code e.g. BLR"),
@@ -235,3 +241,9 @@ async def run_alert_check():
     except Exception:
         lead_log.exception("run-alert-check failed")
         raise HTTPException(status_code=502, detail="Alert check failed")
+
+
+@router.post("/alerts/run")
+async def run_alert_check_public():
+    # Public alias path (keeps legacy /run-alert-check working)
+    return await run_alert_check()

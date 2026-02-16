@@ -35,6 +35,30 @@ class Settings(BaseSettings):
     email_password: str | None = None
     email_from_name: str = "FareAround Alerts"
 
+    # CORS
+    # Comma-separated list of allowed browser origins.
+    # Examples:
+    #   http://localhost:4200
+    #   https://farearound.com,https://www.farearound.com
+    allow_origins: str = "http://localhost:4200"
+
+    def cors_allow_origins(self) -> list[str]:
+        raw = (self.allow_origins or "").strip()
+        if not raw:
+            return []
+
+        items: list[str] = []
+        for part in raw.split(","):
+            v = (part or "").strip()
+            if not v:
+                continue
+            # Normalize: strip trailing slashes so it matches browser Origin exactly.
+            while v.endswith("/"):
+                v = v[:-1]
+            if v and v not in items:
+                items.append(v)
+        return items
+
     class Config:
         # Resolve to backend/.env so tools can be run from repo root
         env_file = str(_ENV_FILE)
